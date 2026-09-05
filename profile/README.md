@@ -19,27 +19,34 @@ The GitHub organization you're looking at is itself provisioned by Terraform.
 ## Architecture
 
 ```mermaid
-flowchart LR
-    subgraph tailnet["Tailscale mesh (private)"]
-        mac["MacBook Pro<br/>workstation + agents"]
-        win["Windows desktop<br/>RTX 3070 · Ollama"]
-        nebula["Nebula Mini PC<br/>Talos control plane (planned)"]
-    end
-    mac -->|local LLM inference| win
-    mac -. talosctl (planned) .-> nebula
+flowchart TB
+    tf["Terraform + CI<br/>(GitHub App auth)"]
 
-    subgraph gh["GitHub org (org-as-code)"]
-        infra["infrastructure<br/>Terraform"]
-        dotgh[".github<br/>this profile"]
+    subgraph gh["GitHub org — provisioned as code"]
+        infra["infrastructure repo<br/>(this IaC)"]
+        dotgh[".github repo<br/>(this profile)"]
     end
-    infra -. manages .-> gh
+
+    tf ==>|provisions org, repos, settings| gh
+
+    subgraph tailnet["Tailscale mesh (private)"]
+        mac["MacBook Pro · M4 Max<br/>Apple MLX · runs 14B–32B locally<br/>+ orchestration"]
+        win["Windows · RTX 3070<br/>Ollama · 7B / offline helper"]
+        nebula["Nebula Mini PC<br/>Talos · DNS · NAS (planned)"]
+    end
+
+    mac -->|offload lighter / offline| win
+    mac -. "talosctl (planned)" .-> nebula
 ```
 
-- **AI compute** runs on a dedicated GPU node (Ollama serving quantized coder /
-  general models), reached from the workstation over a private Tailscale mesh —
-  no ports exposed to the internet.
+- **AI compute is split across the mesh:** an Apple-Silicon MacBook (M4 Max)
+  runs heavier reasoning/coding models locally via [MLX](https://github.com/ml-explore/mlx),
+  and offloads lighter or offline 7B tasks to a GPU node running
+  [Ollama](https://ollama.com/) — all over a private Tailscale mesh, with no
+  ports exposed to the internet.
 - **Control plane (planned)** moves to an always-on, low-power node running
-  Talos Linux, managed entirely over its API.
+  [Talos Linux](https://www.talos.dev/), also serving private DNS and NAS
+  backup, managed entirely over its API.
 - **The org** is defined in Terraform via the `integrations/github` provider —
   repos, branches, protection, secrets, and org settings.
 
@@ -49,7 +56,7 @@ flowchart LR
 | --- | --- |
 | Infra-as-code | Terraform (`integrations/github`), GitHub Actions CI |
 | Private network | Tailscale |
-| Local AI | Ollama (quantized models on consumer GPU) |
+| Local AI | Apple MLX (Apple Silicon) + Ollama (GPU node) |
 | Control plane (planned) | Talos Linux |
 
 ## Repositories
