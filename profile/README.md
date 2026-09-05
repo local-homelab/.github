@@ -32,11 +32,11 @@ flowchart TB
     subgraph tailnet["Tailscale mesh (private)"]
         mac["MacBook Pro · M4 Max<br/>Apple MLX · runs 14B–32B locally<br/>+ orchestration"]
         win["Windows · RTX 3070<br/>Ollama · 7B / offline helper"]
-        nebula["Nebula Mini PC<br/>Talos · DNS · NAS (planned)"]
+        nebula["Nebula Mini PC<br/>Proxmox + k3s · DNS · NAS (planned)"]
     end
 
     mac -->|offload lighter / offline| win
-    mac -. "talosctl (planned)" .-> nebula
+    mac -. "kubectl (planned)" .-> nebula
 ```
 
 - **AI compute is split across the mesh:** an Apple-Silicon MacBook (M4 Max)
@@ -44,9 +44,9 @@ flowchart TB
   and offloads lighter or offline 7B tasks to a GPU node running
   [Ollama](https://ollama.com/) — all over a private Tailscale mesh, with no
   ports exposed to the internet.
-- **Control plane (planned)** moves to an always-on, low-power node running
-  [Talos Linux](https://www.talos.dev/), also serving private DNS and NAS
-  backup, managed entirely over its API.
+- **Cluster (planned)** runs on an always-on, low-power [Proxmox](https://www.proxmox.com/)
+  host with a [k3s](https://k3s.io/) Kubernetes cluster (also private DNS + NAS
+  backup); [Talos](https://www.talos.dev/) is an optional later immutable-K8s swap.
 - **The org** is defined in Terraform via the `integrations/github` provider —
   repos, branches, protection, secrets, and org settings.
 
@@ -57,7 +57,7 @@ flowchart TB
 | Infra-as-code | Terraform (`integrations/github`), GitHub Actions CI |
 | Private network | Tailscale |
 | Local AI | Apple MLX (Apple Silicon) + Ollama (GPU node) |
-| Control plane (planned) | Talos Linux |
+| Cluster (planned) | Proxmox + k3s (Talos optional later) |
 
 ## Repositories
 
